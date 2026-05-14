@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
     status: "online",
   });
 });
-async function checkUrl(url) {
+async function checkUrl(url, platformName) {
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -24,7 +24,33 @@ async function checkUrl(url) {
       }
     });
 
+    const html = await response.text();
+    const text = html.toLowerCase();
+
     if (response.status === 404) return "available";
+
+    if (
+      platformName === "Instagram" &&
+      (
+        text.includes("page isn't available") ||
+        text.includes("cette page n’est malheureusement pas disponible") ||
+        text.includes("le lien que vous avez suivi est peut-être rompu")
+      )
+    ) {
+      return "available";
+    }
+
+    if (
+      platformName === "X / Twitter" &&
+      (
+        text.includes("this account doesn’t exist") ||
+        text.includes("this account doesn't exist") ||
+        text.includes("ce compte n'existe pas")
+      )
+    ) {
+      return "available";
+    }
+
     if (response.status >= 200 && response.status < 400) return "taken";
 
     return "available";
@@ -87,7 +113,7 @@ app.get("/search", async (req, res) => {
   const platforms = await Promise.all(
     platformsToCheck.map(async (platform) => ({
       name: platform.name,
-      status: await checkUrl(platform.url),
+      status: await checkUrl(platform.url, platform.name),
       url: platform.url
     }))
   );
@@ -95,7 +121,7 @@ app.get("/search", async (req, res) => {
   const domains = await Promise.all(
     domainsToCheck.map(async (domain) => ({
       name: domain.name,
-      status: await checkUrl(domain.url),
+      status: await checkUrl(domain.url, "domain"),
       price: domain.price,
       url: domain.url
     }))
