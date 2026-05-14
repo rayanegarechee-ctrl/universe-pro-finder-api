@@ -27,7 +27,11 @@ async function checkUrl(url, platformName) {
     const html = await response.text();
     const text = html.toLowerCase();
 
-    if (response.status === 404) return "available";
+    if (response.status === 404) {
+  return platformName === "domain"
+    ? "available"
+    : "unknown";
+}
 
     if (
       platformName === "Instagram" &&
@@ -60,9 +64,13 @@ if (
 }
     if (response.status >= 200 && response.status < 400) return "taken";
 
-    return "unknown";
+    return platformName === "domain" || platformName === "LinkedIn"
+  ? "available"
+  : "unknown";
   } catch (error) {
-    return "unknown";
+    return platformName === "domain" || platformName === "LinkedIn"
+  ? "available"
+  : "unknown";
   }
 }
 app.get("/search", async (req, res) => {
