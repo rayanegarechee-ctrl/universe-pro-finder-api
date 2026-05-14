@@ -53,9 +53,9 @@ async function checkUrl(url, platformName) {
 
     if (response.status >= 200 && response.status < 400) return "taken";
 
-    return "available";
+    return "unknown";
   } catch (error) {
-    return "available";
+    return "unknown";
   }
 }
 app.get("/search", async (req, res) => {
