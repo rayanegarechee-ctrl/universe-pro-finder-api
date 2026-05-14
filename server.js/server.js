@@ -45,25 +45,29 @@ async function checkUrl(url, platformName) {
 
     }
 
-    if (
-      platformName === "X / Twitter" &&
-      (
-        text.includes("this account doesn’t exist") ||
-        text.includes("this account doesn't exist") ||
-        text.includes("ce compte n'existe pas")
-      )
-    ) {
-      return "available";
-    }
-if (
-  text.includes("dns_probe_finished_nxdomain") ||
-  text.includes("site inaccessible") ||
-  text.includes("domain not found")
-) {
-  return "available";
+if (platformName === "X / Twitter") {
+  const handle = url.split("/").pop().toLowerCase();
+
+  if (
+    text.includes("this account doesn’t exist") ||
+    text.includes("this account doesn't exist") ||
+    text.includes("ce compte n'existe pas")
+  ) {
+    return "available";
+  }
+
+  if (
+    text.includes(`@${handle}`) ||
+    text.includes(`/${handle}`) ||
+    text.includes(handle)
+  ) {
+    return "taken";
+  }
+
+  return "unknown";
 }
-    if (response.status >= 200 && response.status < 400) {
-  if (platformName === "X / Twitter") return "unknown";
+
+if (response.status >= 200 && response.status < 400) {
   return "taken";
 }
 
