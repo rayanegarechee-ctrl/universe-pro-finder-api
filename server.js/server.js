@@ -37,7 +37,8 @@ async function checkUrl(url, platformName) {
         text.includes("le lien que vous avez suivi est peut-être rompu")
       )
     ) {
-      return "available";
+      return "unknown";
+
     }
 
     if (
@@ -50,7 +51,13 @@ async function checkUrl(url, platformName) {
     ) {
       return "available";
     }
-
+if (
+  text.includes("dns_probe_finished_nxdomain") ||
+  text.includes("site inaccessible") ||
+  text.includes("domain not found")
+) {
+  return "available";
+}
     if (response.status >= 200 && response.status < 400) return "taken";
 
     return "unknown";
