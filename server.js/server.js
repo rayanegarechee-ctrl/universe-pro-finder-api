@@ -62,7 +62,10 @@ if (
 ) {
   return "available";
 }
-    if (response.status >= 200 && response.status < 400) return "taken";
+    if (response.status >= 200 && response.status < 400) {
+  if (platformName === "X / Twitter") return "unknown";
+  return "taken";
+}
 
     return platformName === "domain" || platformName === "LinkedIn"
   ? "available"
