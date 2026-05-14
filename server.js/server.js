@@ -14,67 +14,114 @@ app.get("/", (req, res) => {
     status: "online",
   });
 });
+async function checkUrl(url) {
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
 
-app.get("/search", (req, res) => {
-  const query = (req.query.q || "universe_agency")
-    .toLowerCase()
-    .trim();
+    if (response.status === 404) return "available";
+    if (response.status >= 200 && response.status < 400) return "taken";
 
-  const famousTakenNames = [
-    "nike",
-    "adidas",
-    "apple",
-    "google",
-    "tesla",
-    "netflix",
-    "amazon",
-    "instagram",
-    "tiktok",
-    "youtube",
-    "spotify",
-    "zara",
-    "gucci",
-    "prada",
-    "dior",
-    "louisvuitton",
-    "chanel"
+    return "available";
+  } catch (error) {
+    return "available";
+  }
+}
+app.get("/search", async (req, res) => {
+  const query = String(req.query.q || "").trim().toLowerCase();
+
+  if (!query) {
+    return res.status(400).json({ error: "Missing query" });
+  }
+
+  const platformsToCheck = [
+    {
+      name: "Instagram",
+      url: `https://www.instagram.com/${query}/`
+    },
+    {
+      name: "TikTok",
+      url: `https://www.tiktok.com/@${query}`
+    },
+    {
+      name: "YouTube",
+      url: `https://www.youtube.com/@${query}`
+    },
+    {
+      name: "X / Twitter",
+      url: `https://x.com/${query}`
+    },
+    {
+      name: "LinkedIn",
+      url: `https://www.linkedin.com/in/${query}`
+    },
+    {
+      name: "Facebook",
+      url: `https://www.facebook.com/${query}`
+    }
   ];
 
-  const cleanedQuery = query.replace(/[^a-z0-9]/g, "");
+  const domainsToCheck = [
+    {
+      name: `${query}.com`,
+      url: `https://${query}.com`,
+      price: "$12/yr"
+    },
+    {
+      name: `${query}.co`,
+      url: `https://${query}.co`,
+      price: "$28/yr"
+    },
+    {
+      name: `${query}.studio`,
+      url: `https://${query}.studio`,
+      price: "$42/yr"
+    }
+  ];
 
-  const isFamous = famousTakenNames.includes(cleanedQuery);
+  const platforms = await Promise.all(
+    platformsToCheck.map(async (platform) => ({
+      name: platform.name,
+      status: await checkUrl(platform.url),
+      url: platform.url
+    }))
+  );
 
-  const status = isFamous ? "Taken" : "Available";
-  const score = isFamous ? 18 : 87;
+  const domains = await Promise.all(
+    domainsToCheck.map(async (domain) => ({
+      name: domain.name,
+      status: await checkUrl(domain.url),
+      price: domain.price,
+      url: domain.url
+    }))
+  );
+
+  const takenCount =
+    platforms.filter((p) => p.status === "taken").length +
+    domains.filter((d) => d.status === "taken").length;
+
+  const globalScore = Math.max(0, 100 - takenCount * 12);
 
   res.json({
     query,
-    globalScore: score,
-    message: isFamous
-      ? "This name is already strongly occupied."
-      : "Search completed successfully.",
-
-    platforms: [
-      { name: "Instagram", status },
-      { name: "TikTok", status },
-      { name: "YouTube", status },
-      { name: "X / Twitter", status },
-      { name: "LinkedIn", status },
-      { name: "Facebook", status },
-    ],
-
-    domains: [
-      { name: `${query}.com`, status, price: "$12/yr" },
-      { name: `${query}.co`, status, price: "$28/yr" },
-      { name: `${query}.studio`, status: "Available", price: "$42/yr" },
-    ],
-
+    globalScore,
+    message:
+      takenCount > 0
+        ? "Some names are already taken."
+        : "This name looks available.",
+    platforms,
+    domains,
     suggestions: [
       `${query}Lab`,
       `${query}Studio`,
       `${query}World`,
-      `${query}Collective`,
-    ],
+      `${query}Collective`
+    ]
   });
 });
 const PORT = process.env.PORT || 3000;
