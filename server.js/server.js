@@ -149,6 +149,52 @@ app.get("/search", async (req, res) => {
     }))
   );
 
+async function checkEmail(email) {
+  try {
+    const apiKey = process.env.QEV_API_KEY;
+
+    if (!apiKey) return "unknown";
+
+    const response = await fetch(
+      `https://api.quickemailverification.com/v1/verify?email=${encodeURIComponent(email)}&apikey=${apiKey}`
+    );
+
+    const data = await response.json();
+
+    if (data.result === "valid") {
+      return "taken";
+    }
+
+    if (data.result === "invalid") {
+      return "available";
+    }
+
+    return "unknown";
+
+  } catch (error) {
+    console.error("Email check error:", error);
+    return "unknown";
+  }
+}
+const emailsToCheck = [
+  `hello@${query}.com`,
+  `contact@${query}.com`,
+  `team@${query}.com`,
+  `studio@${query}.com`,
+  `founder@${query}.com`,
+  `press@${query}.com`,
+  `business@${query}.com`,
+  `${query}@gmail.com`,
+  `${query}@outlook.com`,
+  `${query}@hotmail.com`
+];
+
+const emails = await Promise.all(
+  emailsToCheck.map(async (email) => ({
+    email,
+    status: await checkEmail(email)
+  }))
+);
   const takenCount =
     platforms.filter((p) => p.status === "taken").length +
     domains.filter((d) => d.status === "taken").length;
@@ -164,6 +210,7 @@ app.get("/search", async (req, res) => {
         : "This name looks available.",
     platforms,
     domains,
+    emails,
     suggestions: [
       `${query}Lab`,
       `${query}Studio`,
